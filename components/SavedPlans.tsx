@@ -78,7 +78,7 @@ const SavedPlans: React.FC<SavedPlansProps> = ({ savedPlans, onDeletePlan, onUpd
     // Helper function for adding meals
     const addMeal = (title: string, meal: Meal | undefined) => {
         if (!meal) return;
-        checkPageBreak(30);
+      checkPageBreak(30);
         doc.setFontSize(14);
         doc.setFont('helvetica', 'bold');
         doc.text(title, margin, y);
@@ -92,6 +92,21 @@ const SavedPlans: React.FC<SavedPlansProps> = ({ savedPlans, onDeletePlan, onUpd
         const descriptionLines = doc.splitTextToSize(meal.description, 170);
         doc.text(descriptionLines, margin, y);
         y += descriptionLines.length * 4 + 8;
+
+        if (meal.ingredientsWithGrams && meal.ingredientsWithGrams.length > 0) {
+          doc.setFontSize(10);
+          doc.setTextColor(0);
+          doc.text('Itens e gramas:', margin, y);
+          y += 5;
+          meal.ingredientsWithGrams.forEach((item) => {
+            const itemLines = doc.splitTextToSize(`- ${item}`, 170);
+            checkPageBreak(itemLines.length * 4 + 2);
+            doc.text(itemLines, margin + 2, y);
+            y += itemLines.length * 4 + 1;
+          });
+          y += 4;
+        }
+
         doc.setTextColor(0);
     };
 
@@ -210,10 +225,38 @@ const SavedPlans: React.FC<SavedPlansProps> = ({ savedPlans, onDeletePlan, onUpd
                  </p>
                  <h3 className="text-lg font-semibold mt-4 mb-2 dark:text-gray-50">Refeições:</h3>
                  <ul className="list-disc pl-5 text-text-light dark:text-gray-400">
-                    <li><strong>Café da Manhã:</strong> {plan.dailyPlan.breakfast.description}</li>
-                    <li><strong>Almoço:</strong> {plan.dailyPlan.lunch.description}</li>
-                    <li><strong>Jantar:</strong> {plan.dailyPlan.dinner.description}</li>
-                    {plan.dailyPlan.snacks?.map((s, i) => <li key={i}><strong>Lanche:</strong> {s.description}</li>)}
+                    <li>
+                      <strong>Café da Manhã:</strong> {plan.dailyPlan.breakfast.description}
+                      {plan.dailyPlan.breakfast.ingredientsWithGrams?.length ? (
+                        <div className="mt-1 text-sm">
+                          {plan.dailyPlan.breakfast.ingredientsWithGrams.join(', ')}
+                        </div>
+                      ) : null}
+                    </li>
+                    <li>
+                      <strong>Almoço:</strong> {plan.dailyPlan.lunch.description}
+                      {plan.dailyPlan.lunch.ingredientsWithGrams?.length ? (
+                        <div className="mt-1 text-sm">
+                          {plan.dailyPlan.lunch.ingredientsWithGrams.join(', ')}
+                        </div>
+                      ) : null}
+                    </li>
+                    <li>
+                      <strong>Jantar:</strong> {plan.dailyPlan.dinner.description}
+                      {plan.dailyPlan.dinner.ingredientsWithGrams?.length ? (
+                        <div className="mt-1 text-sm">
+                          {plan.dailyPlan.dinner.ingredientsWithGrams.join(', ')}
+                        </div>
+                      ) : null}
+                    </li>
+                    {plan.dailyPlan.snacks?.map((s, i) => (
+                      <li key={i}>
+                        <strong>Lanche:</strong> {s.description}
+                        {s.ingredientsWithGrams?.length ? (
+                          <div className="mt-1 text-sm">{s.ingredientsWithGrams.join(', ')}</div>
+                        ) : null}
+                      </li>
+                    ))}
                  </ul>
                  <h3 className="text-lg font-semibold mt-4 mb-2 dark:text-gray-50">Lista supermercado</h3>
                  <ul className="list-disc pl-5 text-text-light dark:text-gray-400 columns-2 md:columns-3">

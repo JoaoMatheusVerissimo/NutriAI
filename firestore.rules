@@ -10,7 +10,7 @@ service cloud.firestore {
     }
 
     function isAllowedSex(sex) {
-      return sex == 'female' || sex == 'male' || sex == 'other';
+      return sex == 'female' || sex == 'male' || sex == 'non_binary' || sex == 'prefer_not_to_say';
     }
 
     function isValidUserProfile(payload) {

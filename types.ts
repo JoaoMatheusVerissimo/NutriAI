@@ -1,5 +1,5 @@
 export type UserGoal = 'lose_weight' | 'maintain_weight' | 'gain_muscle';
-export type UserSex = 'female' | 'male' | 'other';
+export type UserSex = 'female' | 'male' | 'non_binary' | 'prefer_not_to_say';
 
 export interface UserProfile {
   name: string;
@@ -22,6 +22,7 @@ export interface NutritionInfo {
 export interface Meal {
   name: string;
   description: string;
+  ingredientsWithGrams?: string[];
   nutrition: NutritionInfo;
 }
 

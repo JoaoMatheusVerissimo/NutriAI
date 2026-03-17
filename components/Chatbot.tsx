@@ -41,7 +41,7 @@ const Chatbot: React.FC<ChatbotProps> = ({ onClose, profile }) => {
       setMessages([
         {
           role: 'model',
-          text: `Olá, ${profile.name}! Eu sou seu Coach Nutricional. Como posso te ajudar a alcançar seus objetivos hoje?`,
+          text: `Olá, ${profile.name}! Eu sou seu Coach Nutricional, especialista em alimentação. Posso te ajudar com dúvidas e estratégias de nutrição.`,
         },
       ]);
     };
@@ -157,21 +157,21 @@ const Chatbot: React.FC<ChatbotProps> = ({ onClose, profile }) => {
       {/* Input */}
       <div className="p-4 border-t border-gray-200 dark:border-gray-700 flex-shrink-0">
         <p className="mb-2 text-xs text-text-light dark:text-gray-400">
-          As respostas usam apenas objetivo e restrições do seu perfil quando isso ajuda a personalizar a orientação.
+          Este chat responde apenas sobre nutrição e alimentação, usando objetivo e restrições do seu perfil quando necessário.
         </p>
-        <div className="relative">
+        <div className="flex items-center gap-2">
           <textarea
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Pergunte algo..."
+            placeholder="Qual sua duvida?"
             rows={1}
-            className="w-full p-2 pr-12 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-primary focus:border-primary dark:bg-gray-700 dark:border-gray-600 dark:text-gray-50 dark:placeholder-gray-400 resize-none"
+            className="flex-1 min-h-[44px] p-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-primary focus:border-primary dark:bg-gray-700 dark:border-gray-600 dark:text-gray-50 dark:placeholder-gray-400 resize-none"
           />
           <button
             onClick={handleSend}
             disabled={isLoading || !input.trim() || !chat}
-            className="absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-primary rounded-full text-black hover:bg-primary-dark disabled:bg-gray-400 disabled:cursor-not-allowed"
+            className="h-11 w-11 flex-shrink-0 self-center inline-flex items-center justify-center bg-primary rounded-full text-black hover:bg-primary-dark transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
             aria-label="Enviar mensagem"
           >
             <SendIcon className="h-5 w-5" />

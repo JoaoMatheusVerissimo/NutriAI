@@ -80,7 +80,8 @@ const Profile: React.FC<ProfileProps> = ({ profile, onSave }) => {
               <option value="">Selecione</option>
               <option value="female">Feminino</option>
               <option value="male">Masculino</option>
-              <option value="other">Outro</option>
+              <option value="non_binary">Não Binário(a)</option>
+              <option value="prefer_not_to_say">Prefiro não dizer</option>
             </select>
           </div>
           

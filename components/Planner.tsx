@@ -40,6 +40,16 @@ const MealCard: React.FC<{
     <div className="mt-2">
       <h4 className="text-lg font-semibold text-primary-dark">{meal.name}</h4>
       <p className="text-text-light dark:text-gray-400 text-sm mt-1">{meal.description}</p>
+      {meal.ingredientsWithGrams && meal.ingredientsWithGrams.length > 0 && (
+        <div className="mt-3">
+          <p className="text-xs font-semibold uppercase tracking-wide text-text-light dark:text-gray-400">Itens e gramas</p>
+          <ul className="mt-1 list-disc pl-5 text-sm text-text-light dark:text-gray-400 space-y-1">
+            {meal.ingredientsWithGrams.map((item, index) => (
+              <li key={index}>{item}</li>
+            ))}
+          </ul>
+        </div>
+      )}
       <div className="flex flex-wrap gap-2 mt-3">
           <NutritionPill label="Cal" value={meal.nutrition.calories} />
           <NutritionPill label="P" value={`${meal.nutrition.protein}g`} />
@@ -150,6 +160,42 @@ const Planner: React.FC<PlannerProps> = ({ profile, onSavePlan }) => {
   };
 
   const isReplacingAnyMeal = replacingMeal !== null;
+  const orderedMeals = mealPlan ? [
+    {
+      key: 'breakfast' as const,
+      title: 'Café da Manhã',
+      meal: mealPlan.dailyPlan.breakfast,
+    },
+    ...(mealPlan.dailyPlan.snacks?.[0]
+      ? [{
+          key: 'snacks.0' as const,
+          title: 'Lanche da Manhã',
+          meal: mealPlan.dailyPlan.snacks[0],
+        }]
+      : []),
+    {
+      key: 'lunch' as const,
+      title: 'Almoço',
+      meal: mealPlan.dailyPlan.lunch,
+    },
+    ...(mealPlan.dailyPlan.snacks?.[1]
+      ? [{
+          key: 'snacks.1' as const,
+          title: 'Lanche da Tarde',
+          meal: mealPlan.dailyPlan.snacks[1],
+        }]
+      : []),
+    {
+      key: 'dinner' as const,
+      title: 'Jantar',
+      meal: mealPlan.dailyPlan.dinner,
+    },
+    ...(mealPlan.dailyPlan.snacks?.slice(2).map((snack, index) => ({
+      key: `snacks.${index + 2}` as const,
+      title: `Lanche Extra ${index + 1}`,
+      meal: snack,
+    })) || []),
+  ] : [];
 
   return (
     <div className="p-4 md:p-8">
@@ -212,12 +258,16 @@ const Planner: React.FC<PlannerProps> = ({ profile, onSavePlan }) => {
             </Card>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <MealCard title="Café da Manhã" meal={mealPlan.dailyPlan.breakfast} onReplace={() => handleReplaceMeal('breakfast')} isReplacing={replacingMeal === 'breakfast'} isDisabled={isReplacingAnyMeal} />
-                    <MealCard title="Almoço" meal={mealPlan.dailyPlan.lunch} onReplace={() => handleReplaceMeal('lunch')} isReplacing={replacingMeal === 'lunch'} isDisabled={isReplacingAnyMeal} />
-                    <MealCard title="Jantar" meal={mealPlan.dailyPlan.dinner} onReplace={() => handleReplaceMeal('dinner')} isReplacing={replacingMeal === 'dinner'} isDisabled={isReplacingAnyMeal} />
-                {mealPlan.dailyPlan.snacks?.map((snack, index) => (
-                      <MealCard key={index} title={`Lanche ${index + 1}`} meal={snack} onReplace={() => handleReplaceMeal(`snacks.${index}`)} isReplacing={replacingMeal === `snacks.${index}`} isDisabled={isReplacingAnyMeal} />
-                ))}
+              {orderedMeals.map(({ key, title, meal }) => (
+                <MealCard
+                  key={key}
+                  title={title}
+                  meal={meal}
+                  onReplace={() => handleReplaceMeal(key)}
+                  isReplacing={replacingMeal === key}
+                  isDisabled={isReplacingAnyMeal}
+                />
+              ))}
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

@@ -29,4 +29,22 @@ describe('getGeminiErrorMessage', () => {
 
     expect(message).toContain('bloqueada por vazamento');
   });
+
+  it('maps invalid key errors to key regeneration guidance', () => {
+    const message = getGeminiErrorMessage(new Error('API key not valid. Please pass a valid API key.'));
+
+    expect(message).toContain('invalida ou expirou');
+  });
+
+  it('maps disabled API errors to enablement guidance', () => {
+    const message = getGeminiErrorMessage(new Error('GenerativeLanguage API has not been used in project and is disabled. Enable it by visiting the Google Cloud console.'));
+
+    expect(message).toContain('nao esta habilitada');
+  });
+
+  it('keeps quota exceeded as temporary limit', () => {
+    const message = getGeminiErrorMessage(new Error('RESOURCE_EXHAUSTED: quota exceeded for quota metric'));
+
+    expect(message).toContain('limite temporário');
+  });
 });
