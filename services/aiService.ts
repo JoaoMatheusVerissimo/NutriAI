@@ -21,27 +21,27 @@ const OPENROUTER_API_KEY = import.meta.env.VITE_OPENROUTER_API_KEY
  * Ela tenta múltiplos provedores automaticamente.
  */
 export async function generateAIResponse(prompt: string): Promise<string> {
+  // 🔵 Tenta Gemini (1 vez só)
   try {
     console.log("Tentando Gemini...")
     return await callGemini(prompt)
-
   } catch (err) {
-    console.warn("⚠️ Gemini falhou. Tentando Groq...", err)
+    console.warn("Gemini falhou (normal em free tier), usando fallback...")
+  }
 
-    try {
-      return await callGroq(prompt)
+  // 🟢 Groq (principal)
+  try {
+    console.log("Tentando Groq...")
+    return await callGroq(prompt)
+  } catch (err) {
+    console.warn("Groq falhou, tentando OpenRouter...")
+  }
 
-    } catch (err) {
-      console.warn("⚠️ Groq falhou. Tentando OpenRouter...", err)
-
-      try {
-        return await callOpenRouter(prompt)
-
-      } catch (err) {
-        console.error("❌ Todos os provedores falharam", err)
-        throw new Error("Não foi possível gerar resposta no momento.")
-      }
-    }
+  // 🟣 OpenRouter (backup)
+  try {
+    return await callOpenRouter(prompt)
+  } catch (err) {
+    throw new Error("Todos os provedores falharam")
   }
 }
 
@@ -51,32 +51,65 @@ export async function generateAIResponse(prompt: string): Promise<string> {
  * =========================
  */
 async function callGemini(prompt: string): Promise<string> {
-  const response = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`,
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        contents: [
-          {
-            parts: [{ text: prompt }],
-          },
-        ],
-      }),
-    }
-  )
+  const MAX_RETRIES = 3
 
-  // Se API falhar → força fallback
-  if (!response.ok) {
-    throw new Error("Erro no Gemini")
+  for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+    try {
+      console.log(`Gemini tentativa ${attempt}...`)
+
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            contents: [
+              {
+                parts: [{ text: prompt }],
+              },
+            ],
+          }),
+        }
+      )
+
+      // Se der erro de servidor (ex: 503)
+      if (!response.ok) {
+        const errorData = await response.json()
+
+        // Se for erro de alta demanda → tenta novamente
+        if (response.status === 503 && attempt < MAX_RETRIES) {
+          console.warn("Gemini sobrecarregado, tentando novamente...")
+          await delay(1000 * attempt) // espera progressiva
+          continue
+        }
+
+        throw new Error(errorData?.error?.message || "Erro no Gemini")
+      }
+
+      const data = await response.json()
+
+      return data?.candidates?.[0]?.content?.parts?.[0]?.text || ""
+
+    } catch (err) {
+      if (attempt === MAX_RETRIES) {
+        throw err
+      }
+
+      console.warn("Erro temporário, tentando novamente...", err)
+      await delay(1000 * attempt)
+    }
   }
 
-  const data = await response.json()
+  throw new Error("Falha no Gemini após múltiplas tentativas")
+}
 
-  // Retorna texto gerado
-  return data?.candidates?.[0]?.content?.parts?.[0]?.text || ""
+/**
+ * ⏱️ Função auxiliar para delay
+ */
+function delay(ms: number) {
+  return new Promise(resolve => setTimeout(resolve, ms))
 }
 
 /**
