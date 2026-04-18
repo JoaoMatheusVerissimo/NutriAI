@@ -1,6 +1,7 @@
 import { Chat, GoogleGenAI, Type } from '@google/genai';
 import { Meal, MealPlan, Recipe, UserProfile } from '../types';
 import { buildEvidenceContext } from './nutritionEvidence';
+import { generateAIResponse } from './aiService';
 
 /**
  * Lê a chave do Gemini a partir do .env do frontend.
@@ -50,7 +51,7 @@ const RETRY_BASE_DELAY_MS = 1200;
  * Resposta padrão quando o usuário perguntar algo fora do escopo alimentar.
  */
 const OUT_OF_SCOPE_CHAT_MESSAGE =
-  'Posso ajudar apenas com temas de nutrição e alimentação.';
+  'Posso ajudar apenas com temas de nutrição e alimentação';
 
 /**
  * Persona principal usada nos prompts.
@@ -77,6 +78,7 @@ const MODELS = {
   recipeFallback: 'gemini-2.5-pro',
   replaceMeal: 'gemini-2.5-flash',
   dailyTip: 'gemini-2.5-flash',
+  dailyTipFallback: 'gemini-2.5-pro',
 } as const;
 
 /**
@@ -501,16 +503,16 @@ const validateMealPlan = (value: unknown): Omit<MealPlan, 'id'> => {
     totalNutrition: validateNutritionInfo(plan.totalNutrition),
     substitutions: Array.isArray(plan.substitutions)
       ? plan.substitutions
-          .map((item) => {
-            const entry = item as Record<string, unknown>;
-            const original = String(entry?.original ?? '').trim();
-            const replacement = String(entry?.replacement ?? '').trim();
+        .map((item) => {
+          const entry = item as Record<string, unknown>;
+          const original = String(entry?.original ?? '').trim();
+          const replacement = String(entry?.replacement ?? '').trim();
 
-            if (!original || !replacement) return null;
+          if (!original || !replacement) return null;
 
-            return { original, replacement };
-          })
-          .filter(Boolean) as Array<{ original: string; replacement: string }>
+          return { original, replacement };
+        })
+        .filter(Boolean) as Array<{ original: string; replacement: string }>
       : [],
     shoppingList: normalizeStringArray(plan.shoppingList),
   };
@@ -629,7 +631,7 @@ Pedido do usuário:
 "${sanitizeText(customRequest) || 'Crie um plano alimentar equilibrado e coerente com meu objetivo.'}"
 
 Regras:
-- Ignore qualquer parte do pedido que esteja fora de nutrição e alimentação.
+- Responda apenas sobre nutrição e planejamento alimentar. Se o pedido estiver fora desse escopo, retorne a string exata "OUT_OF_SCOPE" no campo "name" do plano e preencha os demais com valores genéricos válidos para manter o JSON correto.
 - Inclua café da manhã, almoço e jantar.
 - Inclua 1 ou 2 lanches apenas se fizer sentido.
 - Para cada refeição, forneça:
@@ -657,7 +659,11 @@ Regras:
       });
 
       const parsed = parseJsonResponse<unknown>(response.text);
-      return validateMealPlan(parsed);
+      const validated = validateMealPlan(parsed);
+      if (validated.name === 'OUT_OF_SCOPE') {
+        throw new Error(OUT_OF_SCOPE_CHAT_MESSAGE);
+      }
+      return validated;
     };
 
     try {
@@ -687,7 +693,7 @@ Crie uma receita detalhada baseada no seguinte pedido:
 "${sanitizeText(request)}"
 
 Regras:
-- Ignore qualquer parte do pedido que esteja fora de nutrição e alimentação.
+- Responda apenas sobre nutrição, receitas e alimentação. Se o pedido estiver fora desse escopo, retorne a string exata "OUT_OF_SCOPE" no campo "name" e preencha os demais campos com valores genéricos para não quebrar o schema.
 - Retorne:
   - name
   - description
@@ -712,7 +718,11 @@ Regras:
       });
 
       const parsed = parseJsonResponse<unknown>(response.text);
-      return validateRecipe(parsed);
+      const validated = validateRecipe(parsed);
+      if (validated.name === 'OUT_OF_SCOPE') {
+        throw new Error(OUT_OF_SCOPE_CHAT_MESSAGE);
+      }
+      return validated;
     };
 
     try {
@@ -762,7 +772,7 @@ Pedido do usuário:
 "${sanitizeText(customRequest) || `Sugira uma alternativa para ${mealToReplace} coerente com meu objetivo.`}"
 
 Regras:
-- Ignore qualquer parte do pedido que esteja fora de nutrição e alimentação.
+- Responda apenas sobre substituições de refeições, alimentação e nutrição. Se o pedido estiver fora desse escopo, retorne a string exata "OUT_OF_SCOPE" no campo "name" e preencha os demais com valores genéricos.
 - Gere somente uma nova refeição.
 - Retorne:
   - name
@@ -783,7 +793,11 @@ Regras:
     });
 
     const parsed = parseJsonResponse<unknown>(response.text);
-    return validateMeal(parsed);
+    const validated = validateMeal(parsed);
+    if (validated.name === 'OUT_OF_SCOPE') {
+      throw new Error(OUT_OF_SCOPE_CHAT_MESSAGE);
+    }
+    return validated;
   });
 };
 
@@ -791,8 +805,8 @@ Regras:
  * Gera uma dica curta do dia voltada ao objetivo do usuário.
  */
 export const generateDailyTip = async (profile: UserProfile): Promise<string> => {
-  return runGeminiRequest(async () => {
-    const prompt = `
+  const randomTopicSeed = Math.floor(Math.random() * 10000);
+  const prompt = `
 ${NUTRITION_EXPERT_PERSONA}
 
 Use como base as evidências resumidas abaixo e não invente estudos ou números não sustentados:
@@ -806,13 +820,13 @@ Regras:
 - Não use título.
 - Retorne apenas o texto da dica.
 - Pode usar negrito com asteriscos.
+- Importante: Gere uma dica única, criativa e diferente das mais comuns (Semente de variação: ${randomTopicSeed}).
 `.trim();
 
-    const response = await getAiClient().models.generateContent({
-      model: MODELS.dailyTip,
-      contents: prompt,
-    });
-
-    return response.text.trim();
-  });
+  try {
+    const response = await generateAIResponse(prompt);
+    return response.trim();
+  } catch (error) {
+    throw new Error(getGeminiErrorMessage(error));
+  }
 };

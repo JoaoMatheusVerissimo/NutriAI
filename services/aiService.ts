@@ -25,7 +25,7 @@ export async function generateAIResponse(prompt: string): Promise<string> {
   try {
     console.log("Tentando Gemini...")
     return await callGemini(prompt)
-  } catch (err) {
+  } catch {
     console.warn("Gemini falhou (normal em free tier), usando fallback...")
   }
 
@@ -33,14 +33,14 @@ export async function generateAIResponse(prompt: string): Promise<string> {
   try {
     console.log("Tentando Groq...")
     return await callGroq(prompt)
-  } catch (err) {
+  } catch {
     console.warn("Groq falhou, tentando OpenRouter...")
   }
 
   // 🟣 OpenRouter (backup)
   try {
     return await callOpenRouter(prompt)
-  } catch (err) {
+  } catch {
     throw new Error("Todos os provedores falharam")
   }
 }

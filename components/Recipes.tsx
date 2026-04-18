@@ -6,7 +6,7 @@ import Card from './ui/Card';
 
 const NutritionPill: React.FC<{ label: string; value: string | number }> = ({ label, value }) => (
     <div className="bg-primary-light text-primary-dark text-sm font-medium px-3 py-1 rounded-full">
-      {label}: {value}
+        {label}: {value}
     </div>
 );
 
@@ -48,7 +48,7 @@ const Recipes: React.FC<RecipesProps> = ({ onSaveRecipe }) => {
             setLoading(false);
         }
     };
-    
+
     const handleExampleClick = (prompt: string) => {
         setRequest(prompt);
     };
@@ -69,7 +69,7 @@ const Recipes: React.FC<RecipesProps> = ({ onSaveRecipe }) => {
         <div className="p-4 md:p-8">
             <h1 className="text-3xl font-bold text-text dark:text-gray-50 mb-2">Gerador de Receitas IA</h1>
             <p className="text-text-light dark:text-gray-400 mb-8">Procurando inspiração culinária? Descreva o que você deseja.</p>
-            
+
             <Card className="mb-8">
                 <div className="space-y-4">
                     <textarea
@@ -109,15 +109,15 @@ const Recipes: React.FC<RecipesProps> = ({ onSaveRecipe }) => {
                             <h2 className="text-3xl font-bold text-primary-dark">{recipe.name}</h2>
                             <p className="text-text-light dark:text-gray-400 mt-2">{recipe.description}</p>
                         </div>
-                        <button 
-                            onClick={handleSave} 
+                        <button
+                            onClick={handleSave}
                             disabled={isSaved || isSaving}
                             className="px-4 py-2 bg-accent text-black font-semibold rounded-md shadow-sm hover:bg-green-600 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors whitespace-nowrap ml-4"
                         >
                             {isSaved ? 'Salva!' : isSaving ? 'Salvando...' : 'Salvar Receita'}
                         </button>
                     </div>
-                    
+
                     <div className="flex flex-wrap gap-4 my-6 text-sm text-text dark:text-gray-50">
                         <span className="font-semibold">Preparo: {recipe.prepTime}</span>
                         <span className="font-semibold">Cozimento: {recipe.cookTime}</span>
