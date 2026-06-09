@@ -58,7 +58,7 @@ async function callGemini(prompt: string): Promise<string> {
       console.log(`Gemini tentativa ${attempt}...`)
 
       const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`,
+        `https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`,
         {
           method: "POST",
           headers: {
@@ -125,7 +125,7 @@ async function callGroq(prompt: string): Promise<string> {
       Authorization: `Bearer ${GROQ_API_KEY}`,
     },
     body: JSON.stringify({
-      model: "llama3-70b-8192", // modelo rápido e gratuito
+      model: "llama-3.3-70b-versatile", // modelo rápido e gratuito
       messages: [
         {
           role: "user",
