@@ -73,7 +73,11 @@ function json(data: unknown, status = 200): Response {
 
 // Remove blocos <think>...</think> que modelos de raciocínio incluem.
 function limparPensamento(texto: string): string {
-  return texto.replace(/<think>[\s\S]*?<\/think>/gi, "").trim();
+  // Remove <think>...</think> (fechado) e <think>... sem fechar (até o fim ou até o conteúdo real)
+  let limpo = texto.replace(/<think>[\s\S]*?<\/think>/gi, "");
+  // Se sobrou um <think> sem fechar, remove tudo do <think> até o fim
+  limpo = limpo.replace(/<think>[\s\S]*/gi, "");
+  return limpo.trim();
 }
 
 // Remove cercas ```json e valida que sobrou um JSON parseável.

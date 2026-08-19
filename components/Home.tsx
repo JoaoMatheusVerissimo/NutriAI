@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useEffect, useCallback } from 'react';
+import React, { useMemo, useState, useEffect, useCallback, useRef } from 'react';
 import { UserProfile, MealPlan, Meal, NutritionInfo } from '../types';
 import { useDailyLocalStorage } from '../hooks/useDailyLocalStorage';
 import { generateDailyTip, getGeminiErrorMessage } from '../services/geminiService';
@@ -18,9 +18,8 @@ interface HomeProps {
 
 const ProgressBar: React.FC<{ value: number; maxValue: number; colorClass: string; label: string }> = ({ value, maxValue, colorClass, label }) => {
     const isOver = value > maxValue;
-    // Cap the visual percentage at 100% to prevent overflow.
     const percentage = maxValue > 0 ? Math.min((value / maxValue) * 100, 100) : 0;
-    
+
     return (
         <div>
             <div className="flex justify-between items-center mb-1">
@@ -29,7 +28,6 @@ const ProgressBar: React.FC<{ value: number; maxValue: number; colorClass: strin
                     {Math.round(value)}g / {Math.round(maxValue)}g
                 </span>
             </div>
-            {/* Add overflow-hidden to the container to be safe */}
             <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5 overflow-hidden">
                 <div className={`${colorClass} h-2.5 rounded-full`} style={{ width: `${percentage}%` }}></div>
             </div>
@@ -42,18 +40,33 @@ const TipOfTheDay: React.FC<{ profile: UserProfile; userId: string }> = ({ profi
     const [tip, setTip] = useState(cachedTip);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const fetchingRef = useRef(false);
+    const [spinning, setSpinning] = useState(false);
+
+    // Remove blocos <think> que modelos de raciocínio incluem
+    const cleanThinking = (text: string): string => {
+        let clean = text.replace(/<think>[\s\S]*?<\/think>/gi, '');
+        clean = clean.replace(/<think>[\s\S]*/gi, '');
+        return clean.trim();
+    };
 
     const fetchTip = useCallback(async (forceRefresh = false) => {
         if (!forceRefresh && cachedTip) {
-            setTip(cachedTip);
+            setTip(cleanThinking(cachedTip));
             setIsLoading(false);
             return;
         }
 
+        if (fetchingRef.current) return;
+        fetchingRef.current = true;
+
+        setSpinning(true);
+        setTip('');
         setIsLoading(true);
         setError(null);
         try {
-            const newTip = await generateDailyTip(profile);
+            const rawTip = await generateDailyTip(profile);
+            const newTip = cleanThinking(rawTip);
             setTip(newTip);
             setCachedTip(newTip);
         } catch (err) {
@@ -61,6 +74,8 @@ const TipOfTheDay: React.FC<{ profile: UserProfile; userId: string }> = ({ profi
             setError(getGeminiErrorMessage(err));
         } finally {
             setIsLoading(false);
+            setSpinning(false);
+            fetchingRef.current = false;
         }
     }, [cachedTip, profile, setCachedTip]);
 
@@ -86,17 +101,18 @@ const TipOfTheDay: React.FC<{ profile: UserProfile; userId: string }> = ({ profi
                     <LightbulbIcon className="w-6 h-6 mr-2 text-primary" /> Dica do Dia
                 </h2>
                 <button
-                    onClick={() => fetchTip(true)}
+                    onClick={() => { setSpinning(true); fetchTip(true); }}
                     disabled={isLoading}
                     className="p-1.5 text-gray-500 hover:text-primary disabled:cursor-wait disabled:opacity-50"
                     aria-label="Gerar nova dica"
                 >
-                    <RefreshCwIcon className={`w-5 h-5 ${isLoading ? 'animate-spin' : ''}`} />
+                    <RefreshCwIcon className={`w-5 h-5 ${spinning ? 'animate-spin' : ''}`} />
                 </button>
             </div>
             {isLoading && !tip && <p className="text-text-light dark:text-gray-400 italic">Buscando uma dica para você...</p>}
+            
             {error && <p className="text-red-500 italic">{error}</p>}
-            {!isLoading && !error && <p className="text-text-light dark:text-gray-400 italic">"{renderBoldText(tip)}"</p>}
+            {!isLoading && !error && tip && <p className="text-text-light dark:text-gray-400 italic">"{renderBoldText(tip)}"</p>}
         </Card>
     );
 };
@@ -110,7 +126,7 @@ const Home: React.FC<HomeProps> = ({ profile, savedPlans, userId, onNavigate }) 
     if (savedPlans.length === 0) return null;
     return [...savedPlans].sort((a, b) => b.id.localeCompare(a.id))[0];
   }, [savedPlans]);
-  
+
   const [checkedMeals, setCheckedMeals] = useDailyLocalStorage<string[]>(`checkedMeals_${userId}`, []);
 
   const consumedNutrition = useMemo(() => {
@@ -143,14 +159,14 @@ const Home: React.FC<HomeProps> = ({ profile, savedPlans, userId, onNavigate }) 
         : [...prev, mealKey]
     );
   };
-  
+
   const getGreeting = () => {
       const hour = new Date().getHours();
       if (hour < 12) return "Bom dia";
       if (hour < 18) return "Boa tarde";
       return "Boa noite";
   }
-  
+
   const mealsToList = useMemo(() => {
     if (!latestPlan) return [];
     const { breakfast, lunch, dinner, snacks } = latestPlan.dailyPlan;
@@ -163,16 +179,15 @@ const Home: React.FC<HomeProps> = ({ profile, savedPlans, userId, onNavigate }) 
         title: `Lanche ${index + 1}`,
         meal: snack
       })) || [])
-    ].filter(item => item.meal); // Filter out potentially undefined meals
+    ].filter(item => item.meal);
   }, [latestPlan]);
 
   return (
     <div className="p-4 md:p-8">
       <h1 className="text-3xl font-bold text-text dark:text-gray-50 mb-2">{getGreeting()}, {profile.name}!</h1>
       <p className="text-text-light dark:text-gray-400 mb-8">Aqui está um resumo do seu dia.</p>
-      
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Main Dashboard Column */}
         <div className="lg:col-span-2 space-y-6">
             <TipOfTheDay profile={profile} userId={userId} />
 
@@ -217,12 +232,12 @@ const Home: React.FC<HomeProps> = ({ profile, savedPlans, userId, onNavigate }) 
                                                         {meal.nutrition.calories} kcal, P:{meal.nutrition.protein}g, C:{meal.nutrition.carbs}g, G:{meal.nutrition.fat}g
                                                     </p>
                                                 </div>
-                                                <button 
+                                                <button
                                                     onClick={() => handleCheckMeal(key)}
                                                     title={isChecked ? 'Desmarcar' : 'Marcar como consumido'}
                                                     className="ml-4 p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors flex-shrink-0"
                                                 >
-                                                    {isChecked 
+                                                    {isChecked
                                                         ? <CheckCircleIcon className="w-7 h-7 text-primary" />
                                                         : <div className="w-7 h-7 rounded-full border-2 border-gray-400"></div>
                                                     }
@@ -237,8 +252,8 @@ const Home: React.FC<HomeProps> = ({ profile, savedPlans, userId, onNavigate }) 
                 ) : (
                     <div className="text-center py-8">
                         <p className="text-text-light dark:text-gray-400 mb-4">Nenhum plano alimentar para hoje.</p>
-                        <button 
-                            onClick={() => onNavigate('planner')} 
+                        <button
+                            onClick={() => onNavigate('planner')}
                             className="px-6 py-2 bg-primary text-black font-bold rounded-lg shadow-md hover:bg-primary-dark"
                         >
                             Criar um Plano Agora
@@ -248,7 +263,6 @@ const Home: React.FC<HomeProps> = ({ profile, savedPlans, userId, onNavigate }) 
             </Card>
         </div>
 
-        {/* Side Column */}
         <div className="space-y-6">
              <Card>
                 <h2 className="text-xl font-bold text-text dark:text-gray-50 mb-3 flex items-center">

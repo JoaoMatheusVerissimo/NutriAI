@@ -2,6 +2,7 @@ import { Chat, GoogleGenAI, Type } from '@google/genai';
 import { Meal, MealPlan, Recipe, UserProfile } from '../types';
 import { buildEvidenceContext } from './nutritionEvidence';
 import { generateAIResponse } from './aiService';
+import { callProxy } from './proxyService';
 
 /**
  * Lê a chave do Gemini a partir do .env do frontend.
@@ -658,8 +659,7 @@ Regras:
         },
       });
 
-      const parsed = parseJsonResponse<unknown>(response.text);
-      const validated = validateMealPlan(parsed);
+      const parsed = parseJsonResponse<unknown>(response.text ?? '');      const validated = validateMealPlan(parsed);
       if (validated.name === 'OUT_OF_SCOPE') {
         throw new Error(OUT_OF_SCOPE_CHAT_MESSAGE);
       }
@@ -717,8 +717,7 @@ Regras:
         },
       });
 
-      const parsed = parseJsonResponse<unknown>(response.text);
-      const validated = validateRecipe(parsed);
+      const parsed = parseJsonResponse<unknown>(response.text ?? '');      const validated = validateRecipe(parsed);
       if (validated.name === 'OUT_OF_SCOPE') {
         throw new Error(OUT_OF_SCOPE_CHAT_MESSAGE);
       }
@@ -792,8 +791,7 @@ Regras:
       },
     });
 
-    const parsed = parseJsonResponse<unknown>(response.text);
-    const validated = validateMeal(parsed);
+      const parsed = parseJsonResponse<unknown>(response.text ?? '');    const validated = validateMeal(parsed);
     if (validated.name === 'OUT_OF_SCOPE') {
       throw new Error(OUT_OF_SCOPE_CHAT_MESSAGE);
     }
@@ -823,8 +821,8 @@ Regras:
 - Importante: Gere uma dica única, criativa e diferente das mais comuns (Semente de variação: ${randomTopicSeed}).
 `.trim();
 
-  try {
-    const response = await generateAIResponse(prompt);
+   try {
+    const response = await callProxy(prompt, false);
     return response.trim();
   } catch (error) {
     throw new Error(getGeminiErrorMessage(error));
