@@ -147,10 +147,11 @@ const Planner: React.FC<PlannerProps> = ({ profile, onSavePlan }) => {
     }
   };
 
-  const handleSavePlan = async () => {
+   const handleSavePlan = async () => {
     if (mealPlan) {
         setIsSaving(true);
-        const success = await onSavePlan({ ...mealPlan, id: crypto.randomUUID() });
+        const id = crypto.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
+        const success = await onSavePlan({ ...mealPlan, id });
         setIsSaving(false);
         setIsSaved(success);
         if (!success) {

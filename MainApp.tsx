@@ -14,7 +14,7 @@ const WaterTracker = lazy(() => import('./components/WaterTracker'));
 const Home = lazy(() => import('./components/Home'));
 const Chatbot = lazy(() => import('./components/Chatbot'));
 
-type MainView =
+export type MainView =
   | 'home'
   | 'planner'
   | 'recipes'
@@ -47,61 +47,31 @@ const MainApp: React.FC<MainAppProps> = ({
 
   const handleSavePlan = async (plan: MealPlan): Promise<boolean> => {
     const alreadyExists = savedPlans.some((savedPlan) => savedPlan.id === plan.id);
-
-    if (alreadyExists) {
-      return true;
-    }
-
+    if (alreadyExists) return true;
     return setSavedPlans([...savedPlans, plan]);
   };
 
-  const handleDeletePlan = async (planId: string): Promise<boolean> => {
-    return setSavedPlans(savedPlans.filter((plan) => plan.id !== planId));
-  };
+  const handleDeletePlan = async (planId: string): Promise<boolean> =>
+    setSavedPlans(savedPlans.filter((plan) => plan.id !== planId));
 
-  const handleUpdatePlan = async (
-    planId: string,
-    newName: string
-  ): Promise<boolean> => {
-    const updatedPlans = savedPlans.map((plan) =>
-      plan.id === planId ? { ...plan, name: newName } : plan
-    );
-
-    return setSavedPlans(updatedPlans);
-  };
+  const handleUpdatePlan = async (planId: string, newName: string): Promise<boolean> =>
+    setSavedPlans(savedPlans.map((plan) => (plan.id === planId ? { ...plan, name: newName } : plan)));
 
   const handleSaveRecipe = async (recipe: Recipe): Promise<boolean> => {
-    const alreadyExists = savedRecipes.some(
-      (savedRecipe) => savedRecipe.id === recipe.id
-    );
-
-    if (alreadyExists) {
-      return true;
-    }
-
+    const alreadyExists = savedRecipes.some((r) => r.id === recipe.id);
+    if (alreadyExists) return true;
     return setSavedRecipes([...savedRecipes, recipe]);
   };
 
-  const handleDeleteRecipe = async (recipeId: string): Promise<boolean> => {
-    return setSavedRecipes(
-      savedRecipes.filter((recipe) => recipe.id !== recipeId)
-    );
-  };
+  const handleDeleteRecipe = async (recipeId: string): Promise<boolean> =>
+    setSavedRecipes(savedRecipes.filter((r) => r.id !== recipeId));
 
-  const handleUpdateRecipe = async (
-    recipeId: string,
-    newName: string
-  ): Promise<boolean> => {
-    const updatedRecipes = savedRecipes.map((recipe) =>
-      recipe.id === recipeId ? { ...recipe, name: newName } : recipe
-    );
+  const handleUpdateRecipe = async (recipeId: string, newName: string): Promise<boolean> =>
+    setSavedRecipes(savedRecipes.map((r) => (r.id === recipeId ? { ...r, name: newName } : r)));
 
-    return setSavedRecipes(updatedRecipes);
-  };
-
-  const handleNavigate = (view: MainView) => {
+  const handleNavigate = (view: string) => {
     startTransition(() => {
-      setActiveView(view);
+      setActiveView(view as MainView);
     });
   };
 
@@ -116,16 +86,12 @@ const MainApp: React.FC<MainAppProps> = ({
             onNavigate={handleNavigate}
           />
         );
-
       case 'planner':
         return <Planner profile={profile} onSavePlan={handleSavePlan} />;
-
       case 'recipes':
         return <Recipes onSaveRecipe={handleSaveRecipe} />;
-
       case 'water':
         return <WaterTracker profile={profile} userId={user.id} />;
-
       case 'saved':
         return (
           <SavedPlans
@@ -134,7 +100,6 @@ const MainApp: React.FC<MainAppProps> = ({
             onUpdatePlan={handleUpdatePlan}
           />
         );
-
       case 'saved_recipes':
         return (
           <SavedRecipes
@@ -143,10 +108,8 @@ const MainApp: React.FC<MainAppProps> = ({
             onUpdateRecipe={handleUpdateRecipe}
           />
         );
-
       case 'profile':
         return <Profile profile={profile} onSave={onSaveProfile} />;
-
       default:
         return (
           <Home
@@ -172,7 +135,12 @@ const MainApp: React.FC<MainAppProps> = ({
           onLogout={onLogout}
         />
 
-        <main className="ml-64 flex-1">
+        {/*
+         * Layout padding:
+         *  - Mobile: pt-14 (top bar) + pb-16 (bottom nav)
+         *  - Desktop (md+): ml-64 (sidebar), no extra top/bottom padding
+         */}
+        <main className="flex-1 pt-14 pb-16 md:pt-0 md:pb-0 md:ml-64">
           {isDataLoading && (
             <div className="mx-4 mt-4 rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-700 dark:border-blue-900 dark:bg-blue-950/30 dark:text-blue-300 md:mx-8">
               Carregando seus dados salvos em segundo plano...
@@ -191,13 +159,14 @@ const MainApp: React.FC<MainAppProps> = ({
         </main>
       </div>
 
+      {/* Chatbot FAB — hides behind mobile bottom nav, so offset is pb-20 on mobile */}
       {!isChatbotOpen && (
         <button
           onClick={() => setIsChatbotOpen(true)}
-          className="fixed bottom-8 right-8 z-40 rounded-full bg-primary p-4 text-black shadow-lg transition-transform duration-200 hover:scale-110 hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 animate-fade-in"
+          className="fixed bottom-20 right-6 z-40 rounded-full bg-primary p-4 text-black shadow-lg transition-transform duration-200 hover:scale-110 hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 animate-fade-in md:bottom-8 md:right-8"
           aria-label="Abrir Coach Nutricional"
         >
-          <ChatBubbleIcon className="h-8 w-8" />
+          <ChatBubbleIcon className="h-7 w-7" />
         </button>
       )}
 

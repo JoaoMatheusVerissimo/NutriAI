@@ -24,11 +24,11 @@ const Auth: React.FC = () => {
   const { register, login, sendPasswordReset } = useAuth();
 
   const passwordRules = [
-    { label: 'Mínimo de 8 caracteres', test: (p: string, _c: string) => p.length >= 8 },
-    { label: 'Pelo menos uma letra maiúscula', test: (p: string, _c: string) => /[A-Z]/.test(p) },
-    { label: 'Pelo menos uma letra minúscula', test: (p: string, _c: string) => /[a-z]/.test(p) },
-    { label: 'Pelo menos um número', test: (p: string, _c: string) => /[0-9]/.test(p) },
-    { label: 'Pelo menos um caractere especial (!@#$%...)', test: (p: string, _c: string) => /[^A-Za-z0-9]/.test(p) },
+    { label: 'Mínimo de 8 caracteres', test: (p: string) => p.length >= 8 },
+    { label: 'Pelo menos uma letra maiúscula', test: (p: string) => /[A-Z]/.test(p) },
+    { label: 'Pelo menos uma letra minúscula', test: (p: string) => /[a-z]/.test(p) },
+    { label: 'Pelo menos um número', test: (p: string) => /[0-9]/.test(p) },
+    { label: 'Pelo menos um caractere especial (!@#$%...)', test: (p: string) => /[^A-Za-z0-9]/.test(p) },
     { label: 'As senhas devem coincidir', test: (p: string, c: string) => c.length > 0 && p === c },
   ];
 
