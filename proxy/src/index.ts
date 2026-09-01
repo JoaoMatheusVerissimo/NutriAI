@@ -12,7 +12,7 @@ const cors = {
 
 // Modelos free-tier ativos. Se algum sair do ar, troca aqui num lugar só.
 const GEMINI_MODEL = "gemini-2.5-flash";
-const GROQ_MODEL = "qwen/qwen3.6-27b";
+const GROQ_MODEL = "qwen/qwen3.8-27b";
 const OPENROUTER_MODEL = "openrouter/free";
 
 export default {
